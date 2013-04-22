@@ -1,0 +1,23 @@
+{
+    "name": "mylittleparis/flurrybundle",
+    "type": "library",
+    "description": "Client for the Flurry APIs (wrapper)",
+    "keywords": ["flurry", "mobile", "api"],
+    "authors": [
+        {
+            "name": "Ekaterina Johnston",
+            "email": "ekaterina.johnston@mylittleparis.com"
+        }
+    ],
+    "support": {
+        "email": "ekaterina.johnston@mylittleparis.com",
+        "issues": "https://github.com/MyLittleParis/FlurryBundle"
+    },
+    "autoload": {
+        "psr-0": { "MyLittle\\Flurry": "src/" }
+    },
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.4.4"
+    }
+}
