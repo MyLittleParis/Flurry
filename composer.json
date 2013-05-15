@@ -1,5 +1,5 @@
 {
-    "name": "mylittleparis/flurrybundle",
+    "name": "mylittleparis/flurry",
     "type": "library",
     "description": "Client for the Flurry APIs (wrapper)",
     "keywords": ["flurry", "mobile", "api"],
@@ -11,7 +11,7 @@
     ],
     "support": {
         "email": "ekaterina.johnston@gmail.com",
-        "issues": "https://github.com/MyLittleParis/FlurryBundle"
+        "issues": "https://github.com/MyLittleParis/Flurry"
     },
     "autoload": {
         "psr-0": { "MyLittle\\Flurry": "src/" }
