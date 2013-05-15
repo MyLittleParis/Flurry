@@ -5,12 +5,13 @@ use Exception;
 /**
  * Flurry Class
  * 
- * This source file can be used to communicate with Flurry (www.flurry.com/)
- * You need to enable the API acces in your flurry account before using this class
+ * This source file can be used to communicate with Flurry (www.flurry.com)
+ * You need to enable the API access in your flurry account before using this class
  * ( Class uses JSON )
+ * The rate limit for the API is 1 request per second. Hence "sleep(1)"
  * 
- * @author          Ekaterina Johnston <ekaterina.johnston@mylittleparis.com>
- * @version         1.0.0 (2013-04-22)
+ * @author          Ekaterina Johnston <ekaterina.johnston@gmail.com>
+ * @version         1.0.0 (2013-05-14)
  * 
  */
 class FlurryClient
@@ -141,7 +142,7 @@ class FlurryClient
 
         //Generates the URL
         $url = "http://api.flurry.com/".$api."/".$metric_name."?".http_build_query($parameters);
-
+        
         $config = array(
                 'http' => array(
                     'header' => 'Accept: application/json',
@@ -156,13 +157,13 @@ class FlurryClient
         } catch (Exception $e) {
             die ('Caught error : '.$e->getMessage());
         }
-
+        sleep(1);
         return $result; 
     }
 
     /**
      * Tries to get file contents and json decode it
-     * @return string  $stringdate
+     * 
      */
     private function getContents($url, $stream) {
         $contents = file_get_contents($url, false, $stream);
@@ -172,7 +173,6 @@ class FlurryClient
         }
         return $result;
     }
-
 
     /**
      * Convers a DateTime object to YYYY-MM-DD formatted string
@@ -193,11 +193,11 @@ class FlurryClient
     {
         $arr = array();
         $arrObj = is_object($obj) ? get_object_vars($obj) : $obj;
-            foreach ($arrObj as $key => $val) {
-                    $val = (is_array($val) || is_object($val)) ? $this->convertObjectToArray($val) : $val;
-                    $arr[$key] = $val;
-            }
-            return $arr;
+        foreach ($arrObj as $key => $val) {
+            $val = (is_array($val) || is_object($val)) ? $this->convertObjectToArray($val) : $val;
+            $arr[$key] = $val;
+        }
+        return $arr;
     }
     
     /////////////////////
@@ -225,7 +225,7 @@ class FlurryClient
     }
     
     /**
-     * Total number of unique users who accessed the application per week
+     * Total number of unique users who accessed the application per month
      * Only returns data for dates which specify at least a complete calendar month
      * (Can't use 'groupBy' parameter. The data is grouped by MONTHS)
      */
@@ -282,6 +282,33 @@ class FlurryClient
         return $this->call('appMetrics', 'AvgPageViewsPerSession', $startDate, $endDate, $eventName=null, $country, $versionName, $groupBy);
     }
   
+     //////////  Supplementary helper function based on "appMetrics" API functions
+
+    /**
+     * Generates an array of all metrics for a given day
+     * @return array List of all metrics (int)
+     */
+    public function getAllAppMetrics($startDate, $country=null, $versionName=null) {
+        $objects_array = array();
+            $objects_array['activeUsers'] = $this->getActiveUsers($startDate, $endDate=null, $country, $versionName);
+            $objects_array['activeUsersByWeek'] = $this->getActiveUsersByWeek($startDate, $endDate=null, $country, $versionName);
+            $objects_array['activeUsersByMonth'] = $this->getActiveUsersByMonth($startDate, $endDate=null, $country, $versionName);
+            $objects_array['newUsers'] = $this->getNewUsers($startDate, $endDate=null, $country, $versionName);
+            $objects_array['medianSessionLength'] = $this->getMedianSessionLength($startDate, $endDate=null, $country, $versionName);
+            $objects_array['avgSessionLength'] = $this->getAvgSessionLength($startDate, $endDate=null, $country, $versionName);
+            $objects_array['sessions'] = $this->getSessions($startDate, $endDate=null, $country, $versionName);
+            $objects_array['retainedUsers'] = $this->getRetainedUsers($startDate, $endDate=null, $country, $versionName);
+            $objects_array['pageViews'] = $this->getPageViews($startDate, $endDate=null, $country, $versionName);
+            $objects_array['avgPageViewsPerSession'] = $this->getAvgPageViewsPerSession($startDate, $endDate=null, $country, $versionName);
+         $result_array = array();
+         foreach ($objects_array as $metric_name=>$object) {
+                $object_array = (is_object($object)) ? $this->convertObjectToArray($object) : $object;
+                $value = (isset($object_array["day"])) ? $object_array["day"]["@value"] : $object_array["@value"];
+                $result_array[$metric_name] = $value;
+         }
+         return $result_array;       
+    }
+    
     //////////  "appInfo" API functions
     /// No parameters
 
@@ -335,13 +362,36 @@ class FlurryClient
         return $this->call('eventMetrics', 'Event', $startDate, $endDate, $eventName, $country=null, $versionName=null, $groupBy=null);
     }
  
-    //////////  Supplementary helper functions basen on "eventMetrics" API functions
+    //////////  Supplementary helper functions based on "eventMetrics" API functions
 
+    /**
+     * Filters the event summary and gets an array with given events only
+     * @param array $events
+     * @param datetime $date
+     * @return array
+     */
+    public function getEventMetricsSummaryForEvents($events, $date) {
+        $array = array();
+        $date = $date->format("Y-m-d");
+        $event_metrics_summary = $this->getEventMetricsSummary($date);
+        $event_array = $event_metrics_summary->event;
+        foreach ($event_array as $event_object) {
+            $event_name = $this->convertObjectToArray($event_object)["@eventName"];
+            if (in_array($event_name, $events)) {
+                array_push($array, $event_object);
+            }
+        }
+        return $this->convertObjectToArray($array);
+    }
+
+    /**
+     * Returns the list of all events of the Appli
+     * @return array List of all events
+     */
     public function getEventList() {
         $list = array();
         $today = date("Y-m-d");
         $event_metrics_summary = $this->getEventMetricsSummary($today);
-        sleep(1);
         $array = $event_metrics_summary->event;
         foreach ($array as $event_object) {
             $event_name = $this->convertObjectToArray($event_object)["@eventName"];
@@ -349,10 +399,9 @@ class FlurryClient
         }
         return $list;
     }
-
+    
     /**
      * Finds the array with a given parameter name in an event metric object
-     * 
      */
     public function findParamInEventMetric($object, $paramName) {
         if (!is_array($object)) {
@@ -360,24 +409,40 @@ class FlurryClient
         } else {
             $full_array = $object;
         }
-
         // Gets the correct part of the array
         $array = $full_array["parameters"]["key"];
         if (isset($array["value"]))
             $array = $array["value"];
-
         $param_array = array();
-        foreach ($array as $key => $value) {
-            // Gets the name
-            isset($value["@name"]) ? $name = $value["@name"] : $name = $value;
-            // Gets rid of "NUM | " part of name
-            $name = substr(strstr($name, "|"), 2);
-            if ($name == $paramName)
-                $param_array = $value;
+        if (null!=$array) {
+            if (isset($array["@name"])) {
+                $result = $this->findMatchingNameArray($array, $paramName);
+            } else {
+                $result = null;
+                foreach ($array as $value) {
+                    $returned = $this->findMatchingNameArray($value, $paramName);
+                    $result = ($returned!=null) ? $returned : $result;
+                }
+            }
+        } else {
+            $result = null;
         }
-        return (empty($param_array)) ? null : $param_array;
+        return $result;
     }
 
+    /**
+     * Example of match :
+     * $paramName = "My plan";
+     * $name = "37 | My plan"
+     */
+    private function findMatchingNameArray($array, $paramName) {
+        // Gets the name
+        $name = isset($array["@name"]) ? $array["@name"] : $array;
+        // Gets rid of "NUM | " part of name
+        $name = substr(strstr($name, "|"), 2);
+        return ($name==$paramName) ? $array : null;
+    }
+    
     /**
      * Generates an array for parameter(s) with given events metrics
      * 
@@ -402,9 +467,12 @@ class FlurryClient
         $return_array = array();
         foreach ($events as $event) {
             $event_metric_object = $this->getEventMetrics($event, $startDate, $endDate);
-            sleep(1);
             $parameter_array = $this->findParamInEventMetric($event_metric_object, $parameter);
-            $return_array[$event] = $parameter_array["@totalCount"];
+            if (isset($parameter_array["@totalCount"])) {
+                $return_array[$event] = $parameter_array["@totalCount"];
+            } else {
+                $return_array[$event] = NULL; 
+            }
         }
         return $return_array;
     }
@@ -417,12 +485,14 @@ class FlurryClient
         $return_array = array();
         foreach ($events as $event) {
             $event_metric_object = $this->getEventMetrics($event, $startDate, $endDate);
-            sleep(1);
             foreach ($parameters as $parameter) {
                 $parameter_array = $this->findParamInEventMetric($event_metric_object, $parameter);
-                $return_array[$parameter][$event] = $parameter_array["@totalCount"];
+                if (isset($parameter_array["@totalCount"])) {
+                     $return_array[$parameter][$event] = $parameter_array["@totalCount"];
+                } else {
+                     $return_array[$parameter][$event] = null;
+                }
             }
-
         }
         return $return_array;
     }

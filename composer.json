@@ -6,11 +6,11 @@
     "authors": [
         {
             "name": "Ekaterina Johnston",
-            "email": "ekaterina.johnston@mylittleparis.com"
+            "email": "ekaterina.johnston@gmail.com"
         }
     ],
     "support": {
-        "email": "ekaterina.johnston@mylittleparis.com",
+        "email": "ekaterina.johnston@gmail.com",
         "issues": "https://github.com/MyLittleParis/FlurryBundle"
     },
     "autoload": {
