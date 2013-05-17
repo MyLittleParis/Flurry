@@ -11,8 +11,9 @@ use Exception;
  * The rate limit for the API is 1 request per second. Hence "sleep(1)"
  * 
  * @author          Ekaterina Johnston <ekaterina.johnston@gmail.com>
- * @version         1.0.0 (2013-05-14)
- * 
+ * @version         1.0.1 (2013-05-17)
+ * @example         $fl = new FlurryClient($apiAccessCode, $apiKey, 5);
+ *                  $app_metrics = $fl->getAllAppMetrics("2013-05-14");
  */
 class FlurryClient
 {
@@ -64,15 +65,23 @@ class FlurryClient
     private $apiKey;
     
     /**
+     * Maximum number of retries on flurry error
+     * Equals 3 by default
+     * @var integer 
+     */
+    private $max_try_cnt;
+
+    /**
      * Default Constructor
      * @param type $apiAccessCode
      * @param type $apiKey
      * @return type
      */
-    public function __construct($apiAccessCode, $apiKey)
+    public function __construct($apiAccessCode, $apiKey, $max_try_cnt = 3)
     {
         $this->apiAccessCode = $apiAccessCode;
         $this->apiKey = $apiKey;
+        $this->max_try_cnt = $max_try_cnt;
     }
     
     /**
@@ -103,7 +112,7 @@ class FlurryClient
     }
     
     /**
-     * Makes a Flurry Calls
+     * Makes Flurry Calls
      * @param string $api           Name of APi to use
      * @param string $metric_name   Name of metric to use
      * @param string $startDate     YYYY-MM-DD format
@@ -112,7 +121,6 @@ class FlurryClient
      * @param string $country       Specifying a value of "ALL" or "all" for the COUNTRY will return a result which is broken down by countries
      * @param string $versionName   Name set by the developer for each version of the application. This can be found by logging into the Flurry website or contacting support.
      * @param string $groupBy       Changes the grouping of data into DAYS, WEEKS, or MONTHS. All metrics default to DAYS (except ActiveUsersByWeek and ActiveUsersByMonth)
-     * @return type ??
      * 
      * @example $this->call('appMetrics', 'activeUsers', '2013-04-19', null, null, null, null, null)
      */
@@ -152,26 +160,32 @@ class FlurryClient
             );
         $stream = stream_context_create($config);
         
-        try {
-            $result = $this->getContents($url, $stream);
-        } catch (Exception $e) {
-            die ('Caught error : '.$e->getMessage());
-        }
+        // getContents() might throw an error
+        $result = $this->getContents($url, $stream);
         sleep(1);
         return $result; 
     }
 
     /**
-     * Tries to get file contents and json decode it
-     * 
+     * Tries to get file contents and json decodes it
+     * @param integer $try_cnt Number of the try
      */
-    private function getContents($url, $stream) {
+    private function getContents($url, $stream, $try_cnt = 0) {
+        sleep(1);
+        $try_cnt++;
         $contents = file_get_contents($url, false, $stream);
         $result = json_decode($contents);
+        // Upon error
         if (isset($result->code)) {
-            throw new Exception($result->code." - '".$result->message."'", 1);
+            //throw new \Exception($result->code." - '".$result->message."'", $result->code);
+            if ($try_cnt <= $this->max_try_cnt) {
+                $result = $this->getContents($url, $stream, $try_cnt);
+            } else {
+                throw new \Exception($result->code." - '".$result->message."'", $result->code);
+            }
+        } else {
+            return $result;
         }
-        return $result;
     }
 
     /**
