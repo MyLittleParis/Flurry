@@ -11,7 +11,7 @@ use Exception;
  * The rate limit for the API is 1 request per second. Hence "sleep(1)"
  * 
  * @author          Ekaterina Johnston <ekaterina.johnston@gmail.com>
- * @version         1.0.1 (2013-05-17)
+ * @version         1.0.2 (2013-05-17)
  * @example         $fl = new FlurryClient($apiAccessCode, $apiKey, 5);
  *                  $app_metrics = $fl->getAllAppMetrics("2013-05-14");
  */
@@ -327,14 +327,14 @@ class FlurryClient
     /// No parameters
 
     /**
-     * 	Information on a specific project
+     *  Information on a specific project
      */
     public function getApplicationInfo() {
         return $this->call('appInfo', 'getApplication', $startDate=null, $endDate=null, $eventName=null, $country=null, $versionName=null, $groupBy=null);
     }
     
     /**
-     * 	Information on all projects under a specific company
+     *  Information on all projects under a specific company
      */
     public function getAllApplications() {
         return $this->call('appInfo', 'getAllApplications', $startDate=null, $endDate=null, $eventName=null, $country=null, $versionName=null, $groupBy=null);
@@ -346,15 +346,15 @@ class FlurryClient
     // Parameter order : getEventMetrics($eventName, $startDate, $endDate, $versionName)
 
     /**
-     * 	Returns a list of all events for the specified application with the following information for each
+     *  Returns a list of all events for the specified application with the following information for each
      * 
      *  Event Name              The name of the event
      *  Users Last Day          Total number of unique users for the last complete day
      *  Users Last Week         Total number of unique users for the last complete week
-     *  Users Last Month	Total number of unique users for the last complete month
-     *  Avg Users Last Day	The average of the number of unique users for each day in the interval
-     *  Avg Users Last Week	The average of the number of unique users for each week in the interval
-     *  Avg Users Last Month	The average of the number of unique users for each month in the interval
+     *  Users Last Month    Total number of unique users for the last complete month
+     *  Avg Users Last Day  The average of the number of unique users for each day in the interval
+     *  Avg Users Last Week The average of the number of unique users for each week in the interval
+     *  Avg Users Last Month    The average of the number of unique users for each month in the interval
      *  Total Counts            Total number of time the event occurred
      *  Total Sessions          Total number of sessions
      */
@@ -365,11 +365,11 @@ class FlurryClient
     /**
      *  The metrics returned are:
      * 
-     *  Unique Users	Total number of unique users
-     *  Total Sessions	Total number of sessions
-     *  Total Count	Total number of time the event occurred
-     *  Duration	Total   Duration of the event (Will be displayed only if the event is timed)
-     *  Parameters	This will return a list of key/values. The key is the name of the parameter
+     *  Unique Users    Total number of unique users
+     *  Total Sessions  Total number of sessions
+     *  Total Count Total number of time the event occurred
+     *  Duration    Total   Duration of the event (Will be displayed only if the event is timed)
+     *  Parameters  This will return a list of key/values. The key is the name of the parameter
      *  The values have the following metrics: name (the event name) and totalCount (the number of sessions)
      */
     public function getEventMetrics($eventName, $startDate, $endDate=null, $versionName=null) {
@@ -445,15 +445,14 @@ class FlurryClient
     }
 
     /**
-     * Example of match :
-     * $paramName = "My plan";
-     * $name = "37 | My plan"
+     * Finds teh matching name array
+     * @param array $array
+     * @param string $paramName
+     * @return null|array
      */
     private function findMatchingNameArray($array, $paramName) {
         // Gets the name
         $name = isset($array["@name"]) ? $array["@name"] : $array;
-        // Gets rid of "NUM | " part of name
-        $name = substr(strstr($name, "|"), 2);
         return ($name==$paramName) ? $array : null;
     }
     
